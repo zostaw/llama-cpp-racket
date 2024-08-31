@@ -4,7 +4,7 @@
 
 
 (define-ffi-definer define-llama
-  (ffi-lib "/Users/zostaw/projects/llama.cpp/build2/src/libllama.dylib"))
+  (ffi-lib "./wrapper/build/src/libllama.dylib"))
 
 
 (define _llama_split_mode
@@ -60,8 +60,6 @@
   #:c-id model_params_free)
 
 (define params (model-params-init))
-
-
 
 
 
