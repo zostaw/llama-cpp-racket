@@ -25,3 +25,5 @@ clean:
 	-rm $(dylib)
 	cp $(llama_h_back) $(llama_h)
 	cp $(llama_cpp_back) $(llama_cpp)
+
+rebuild: clean build

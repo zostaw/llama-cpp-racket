@@ -54,7 +54,7 @@
 
 ;; Model
 
-#;(define _e_model
+(define _e_model
   (_enum 
    '(MODEL_UNKNOWN MODEL_14M MODEL_17M MODEL_22M MODEL_33M MODEL_60M MODEL_70M
      MODEL_80M MODEL_109M MODEL_137M MODEL_160M MODEL_220M MODEL_250M MODEL_270M
@@ -190,18 +190,24 @@
     (_fun _model_ptr -> _void)
     #:c-id model_free)
 
+(define-llama model-print-ptr
+
+  (_fun _model_ptr -> _void)
+  #:c-id model_print_ptr_addr)
 
 
+
+;; Initialize
 (define params (model-params-init))
-;(define model (llama-model-from-file"./model.bin" params))
-
-(llama-model-params-displayln params)
-
 (define model (model-init-from-file "./t5-v1_1-xxl-encoder-Q5_K_M.gguf" params))
 
-(println model)
+;; Display
+(llama-model-params-displayln params)
+(model-print-ptr model)
 
-;(model-free model)
+
+;; Deallocate
+(model-free model)
 (model-params-free params)
 
 

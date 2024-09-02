@@ -15,12 +15,20 @@ void * model_init_from_file(const char * file_path, struct llama_model_params pa
 {
     //struct llama_model * model = (struct llama_model *) malloc(sizeof(struct llama_model));
     struct llama_model * model = llama_load_model_from_file(file_path, params);
-    void* model_ptr = &model;
-    printf("CPP side struct: %p\n", model);
-    printf("CPP side void: %p\n", model_ptr);
-    return model_ptr;
+    void* model_v_ptr = model;
+    printf("[llama.cpp] - model_init_from_file - struct addr: %p\n", model);
+    printf("[llama.cpp - model_init_from_file - void addr: %p\n", model_v_ptr);
+    return model_v_ptr;
 }
 
-void model_free(struct llama_model ** model) {
-    free(*model);
+void model_print_ptr_addr(void * model_v_ptr) {
+    struct llama_model * model = static_cast<struct llama_model *>(model_v_ptr);
+    printf("[llama.cpp] - model_print_ptr_addr - void addr: %p\n", model_v_ptr);
+    printf("[llama.cpp - model_print_ptr_addr - struct addr: %p\n", model);
+    printf("[llama.cpp] - model_print_ptr_addr - model name: '%s'\n", model->name.c_str());
+}
+
+void model_free(void * model_v_ptr) {
+    struct llama_model * model = static_cast<struct llama_model *>(model_v_ptr);
+    free(model);
 }
