@@ -153,61 +153,79 @@
 (define _ggml_backend_sched_eval_callback (_fun _pointer _bool _pointer -> _bool))
 (define _ggml_abort_callback (_fun _pointer -> _bool))
 
+(define _llama_token int32_t)
+
+(define _llama_vocab_type
+  (_enum '(LLAMA_VOCAB_TYPE_NONE = 0 ; For models without vocab
+           LLAMA_VOCAB_TYPE_SPM  = 1 ; LLaMA tokenizer based on byte-level BPE with byte fallback
+           LLAMA_VOCAB_TYPE_BPE  = 2 ; GPT-2 tokenizer based on byte-level BPE
+           LLAMA_VOCAB_TYPE_WPM  = 3 ; BERT tokenizer based on WordPiece
+           LLAMA_VOCAB_TYPE_UGM  = 4 ; T5 tokenizer based on Unigram
+           LLAMA_VOCAB_TYPE_RWKV = 5 ; RWKV tokenizer based on greedy tokenization
+         )
+         _uint32
+         #:unknown (lambda (x)
+                     (cond
+                       ((eq? x 'LLAMA_VOCAB_TYPE_NONE) 0)
+                       ((eq? x LLAMA_VOCAB_TYPE_SPM) 1)
+                       ((eq? x LLAMA_VOCAB_TYPE_BPE) 2)
+                       ((eq? x LLAMA_VOCAB_TYPE_WPM) 3)
+                       ((eq? x LLAMA_VOCAB_TYPE_UGM) 4)
+                       ((eq? x LLAMA_VOCAB_TYPE_RWKV) 5)
+                       (else (error 'llama_vocab_type "unknown enum value")))))
 
 
 
 ;; Params and context params
 ; Structs
 (define-cstruct _llama_model_params
-  ([n_gpu_layers                _int32]
-   [split_mode                  _llama_split_mode]
-   [main_gpu                    _int32]
-   [tensor_split                _pointer]
-   [rpc_servers                 _pointer]
-   [progress_callback           _pointer]
-   [progress_callback_user_data _pointer]
-   [kv_overrides                _pointer]
-   [vocab_only                  _bool]
-   [use_mmap                    _bool]
-   [use_mlock                   _bool]
-   [check_tensors               _bool]))
+  ([n_gpu_layers                         _int32]
+   [split_mode                _llama_split_mode]
+   [main_gpu                             _int32]
+   [tensor_split                       _pointer]
+   [rpc_servers                        _pointer]
+   [progress_callback                  _pointer]
+   [progress_callback_user_data        _pointer]
+   [kv_overrides                       _pointer]
+   [vocab_only                            _bool]
+   [use_mmap                              _bool]
+   [use_mlock                             _bool]
+   [check_tensors                         _bool]))
 
 (define-cstruct _llama_context_params
-  ([n_ctx                _uint32]
-   [n_batch                _uint32]
-   [n_ubatch                _uint32]
-   [n_seq_max                _uint32]
-   [n_threads                _int32]
-   [n_threads_batch          _int32]
+  ([n_ctx                               _uint32]
+   [n_batch                             _uint32]
+   [n_ubatch                            _uint32]
+   [n_seq_max                           _uint32]
+   [n_threads                            _int32]
+   [n_threads_batch                      _int32]
 
-   [rope_scaling_type          _llama_rope_scaling_type]
-   [pooling_type              _llama_pooling_type]
-   [attention_type            _llama_attention_type]
+   [rope_scaling_type  _llama_rope_scaling_type]
+   [pooling_type            _llama_pooling_type]
+   [attention_type        _llama_attention_type]
 
-   [rope_freq_base            _float]
-   [rope_freq_scale          _float]
-   [yarn_ext_factor          _float]
-   [yarn_attn_factor          _float]
-   [yarn_beta_fast          _float]
-   [yarn_beta_slow          _float]
-   [yarn_orig_ctx          _uint32]
-   [defrag_thold          _float]
+   [rope_freq_base                       _float]
+   [rope_freq_scale                      _float]
+   [yarn_ext_factor                      _float]
+   [yarn_attn_factor                     _float]
+   [yarn_beta_fast                       _float]
+   [yarn_beta_slow                       _float]
+   [yarn_orig_ctx                       _uint32]
+   [defrag_thold                         _float]
 
-   [cb_eval                _ggml_backend_sched_eval_callback]
-   [cb_eval_user_data        _pointer]
+   [cb_eval   _ggml_backend_sched_eval_callback]
+   [cb_eval_user_data                  _pointer]
 
-   [type_k                _ggml_type]
-   [type_v                _ggml_type]
+   [type_k                           _ggml_type]
+   [type_v                           _ggml_type]
 
-   [logits_all                _bool]
-   [embeddings                _bool]
-   [offload_kqv                _bool]
-   [flash_attn                _bool]
+   [logits_all                            _bool]
+   [embeddings                            _bool]
+   [offload_kqv                           _bool]
+   [flash_attn                            _bool]
 
-   [abort_callback          _ggml_abort_callback]
-   [abort_callback_data        _pointer]
-
-   ))
+   [abort_callback         _ggml_abort_callback]
+   [abort_callback_data                _pointer]))
 
 ;; Constructors
 (define-llama llama-model-default-params
