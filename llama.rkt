@@ -273,6 +273,10 @@
   #:c-id model_print_ptr_addr)
 
 
+;; Add bos - determines if bos tokens are used in the model
+(define-llama llama-add-bos-token
+  (_fun _llama_model -> _bool)
+  #:c-id llama_add_bos_token)
 
 
 ;; Context constructor-destructor
@@ -310,7 +314,9 @@
   #:c-id llama_tokenize)
 
 (define (tokenizer model max-tokens add-special parse-special)
+; Curry lambda function that takes only text string as argument.
   (define tokens-vector (make-vector max-tokens 0))
+  ; The lambda function takes String and returns: num-tokens (Integer), tokens (Vector<Integer>) 
   (λ (text) (llama-tokenize model
                             text
                             (string-length text)
@@ -327,8 +333,9 @@
 (define model (llama-load-model-from-file "./t5-v1_1-xxl-encoder-Q5_K_M.gguf" model-params))
 (define ctx-params (llama-context-default-params))
 (define ctx (llama-new-context-with-model model ctx-params))
+(define add-special (llama-add-bos-token model))
 (define tokenize
-   (tokenizer model 100 #t #t))
+   (tokenizer model 100 add-special #f))
 
 ;; Display some params and other info...
 (llama-model-params-displayln model-params)
