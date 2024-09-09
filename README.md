@@ -27,3 +27,8 @@ The lib will be placed in *wrapper/build/src/libllama.dylib*
 racket ./llama.rkt
 ```
 
+
+
+# Tokenizer works now:
+
+![tokenizer](./tokenizer.gif)

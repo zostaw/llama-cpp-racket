@@ -153,7 +153,7 @@
 (define _ggml_backend_sched_eval_callback (_fun _pointer _bool _pointer -> _bool))
 (define _ggml_abort_callback (_fun _pointer -> _bool))
 
-(define _llama_token int32_t)
+(define _llama_token _int32)
 
 (define _llama_vocab_type
   (_enum '(LLAMA_VOCAB_TYPE_NONE = 0 ; For models without vocab
@@ -167,12 +167,12 @@
          #:unknown (lambda (x)
                      (cond
                        ((eq? x 'LLAMA_VOCAB_TYPE_NONE) 0)
-                       ((eq? x LLAMA_VOCAB_TYPE_SPM) 1)
-                       ((eq? x LLAMA_VOCAB_TYPE_BPE) 2)
-                       ((eq? x LLAMA_VOCAB_TYPE_WPM) 3)
-                       ((eq? x LLAMA_VOCAB_TYPE_UGM) 4)
-                       ((eq? x LLAMA_VOCAB_TYPE_RWKV) 5)
-                       (else (error 'llama_vocab_type "unknown enum value")))))
+                       ((eq? x 'LLAMA_VOCAB_TYPE_SPM) 1)
+                       ((eq? x 'LLAMA_VOCAB_TYPE_BPE) 2)
+                       ((eq? x 'LLAMA_VOCAB_TYPE_WPM) 3)
+                       ((eq? x 'LLAMA_VOCAB_TYPE_UGM) 4)
+                       ((eq? x 'LLAMA_VOCAB_TYPE_RWKV) 5)
+                       (else (error 'llama_vocab_type "unknown enum value"))))))
 
 
 
@@ -294,16 +294,54 @@
 
 
 
+;; Tokenizer
+;_llama_token
+(define-llama llama-tokenize
+  (_fun
+   _llama_model
+   _string
+   _int32
+   [vec : (_vector i _llama_token)]
+   _int32
+   _bool
+   _bool
+   -> [res : _int32]
+   -> (values vec res))
+  #:c-id llama_tokenize)
+
+(define (tokenizer model max-tokens add-special parse-special)
+  (define tokens-vector (make-vector max-tokens 0))
+  (λ (text) (llama-tokenize model
+                            text
+                            (string-length text)
+                            tokens-vector
+                            max-tokens
+                            add-special
+                            parse-special)))
+
+
+
+
+
 ;; Initialize
 (define model-params (llama-model-default-params))
 (define model (llama-load-model-from-file "./t5-v1_1-xxl-encoder-Q5_K_M.gguf" model-params))
 (define ctx-params (llama-context-default-params))
 (define ctx (llama-new-context-with-model model ctx-params))
+(define tokenize
+   (tokenizer model 100 #t #t))
 
 ;; Display
 (llama-model-params-displayln model-params)
 (model-print-ptr model)
 (context-print-ptr ctx)
+
+
+(define text (read-line))
+(define-values (tokens tokens-len) (tokenize text))
+
+(for ([i (in-range tokens-len)])
+  (println (ptr-ref tokens _llama_token i)))
 
 ;; Deallocate
 (llama-free-context ctx)
