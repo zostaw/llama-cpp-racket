@@ -21,7 +21,14 @@ make build
 
 The lib will be placed in *wrapper/build/src/libllama.dylib*
 
-3. Now you can use it with *llama.rkt*, run to test:
+3. Place some llama.cpp-compatible model, i.e. I use [city96/t5-v1_1-xxl-encoder-gguf](https://huggingface.co/city96/t5-v1_1-xxl-encoder-gguf).  
+Make sure that path to model is correctly defined in llama.rkt.
+
+```
+Line 327: (define model (llama-load-model-from-file "./t5-v1_1-xxl-encoder-Q5_K_M.gguf" model-params))
+```
+
+4. Now you can use it with *llama.rkt*, run to test:
 
 ```
 racket ./llama.rkt

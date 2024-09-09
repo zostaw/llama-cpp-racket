@@ -322,7 +322,6 @@
 
 
 
-
 ;; Initialize
 (define model-params (llama-model-default-params))
 (define model (llama-load-model-from-file "./t5-v1_1-xxl-encoder-Q5_K_M.gguf" model-params))
@@ -331,15 +330,14 @@
 (define tokenize
    (tokenizer model 100 #t #t))
 
-;; Display
+;; Display some params and other info...
 (llama-model-params-displayln model-params)
 (model-print-ptr model)
 (context-print-ptr ctx)
 
-
+;; Tokenize from input text
 (define text (read-line))
 (define-values (tokens tokens-len) (tokenize text))
-
 (for ([i (in-range tokens-len)])
   (println (ptr-ref tokens _llama_token i)))
 
