@@ -5,13 +5,14 @@
 (provide (all-defined-out))
 
 
-(define-ffi-definer define-llama
+#;(define-ffi-definer define-llama
   (ffi-lib
    (string-append
     (path->string (current-directory)) "libllama.dylib")))
 
 
-
+(define-ffi-definer define-llama
+  (ffi-lib "libllama"))
 
 ;; Types definitions (they're mostly used for params structs declarations).
 ;; It's gonna be long,
