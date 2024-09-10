@@ -5,10 +5,6 @@
 (provide (all-defined-out))
 
 
-#;(define-ffi-definer define-llama
-  (ffi-lib
-   (string-append
-    (path->string (current-directory)) "libllama.dylib")))
 
 
 (define-ffi-definer define-llama
@@ -238,23 +234,6 @@
   (_fun -> _llama_context_params)
   #:c-id llama_context_default_params)
 
-;; Printer function/s
-#;(define (llama-model-params-displayln params)
-  (displayln
-   (format "n_gpu_layers: ~a \nsplit_mode: ~a \nmain_gpu: ~a \ntensor_split: ~a \nrpc_servers: ~a \nprogress_callback: ~a \nprogress_callback_user_data: ~a \nkv_overrides: ~a \nvocab_only: ~a \nuse_mmap: ~a \nuse_mlock: ~a \ncheck_tensors: ~a"
-           (ptr-ref params _int32 0)
-           (ptr-ref params _llama_split_mode 1)
-           (ptr-ref params _int32 2)
-           (ptr-ref params _pointer 3)
-           (ptr-ref params _pointer 4)
-           (ptr-ref params _pointer 5)
-           (ptr-ref params _pointer 6)
-           (ptr-ref params _pointer 7)
-           (ptr-ref params _bool 8)
-           (ptr-ref params _bool 9)
-           (ptr-ref params _bool 10)
-           (ptr-ref params _bool 11))))
-
 
 
 
@@ -315,9 +294,9 @@
   #:c-id llama_tokenize)
 
 (define (tokenizer model max-tokens add-special parse-special)
-; Curry lambda function that takes only text string as argument.
+; Defines closure that takes only text string as argument.
   (define tokens-vector (make-vector max-tokens 0))
-  ; The lambda function takes String and returns: num-tokens (Integer), tokens (Vector<Integer>) 
+  ; The lambda function takes String and returns: num-tokens (Integer), tokens (Vector<Integer>)
   (λ (text) (llama-tokenize model
                             text
                             (string-length text)
@@ -330,7 +309,6 @@
 
 
 ;; Token -> Piece
-;(define llama-token-max-len 30)
 (define-llama llama-token-to-piece
   (_fun _llama_model
         _llama_token
@@ -345,7 +323,7 @@
 (define (token-to-piecer model lstrip special)
   #|
   Closure that once defined can be called with token as argument.
-  For example, you first initiate token-to-piecer:
+  For example, you first initiate token-to-piecer (assuming you already have _llama_model object initialized):
   (define token-to-piece
      (token-to-piecer model ; model - type: _llama_model
                       1 ; lstrip - type int
@@ -371,8 +349,7 @@
 
   (for ([i (in-range tokens-len)])
     (let ([token (ptr-ref tokens _llama_token i)])
-      (define piece (token-to-piece token))
-      (displayln (format "token: ~a, piece: \"~a\"" token piece ))))
+      (displayln (format "token: ~a, piece: \"~a\"" token (token-to-piece token) ))))
 |#
   
   (define (generate-token token [llama-token-max-len 1])
