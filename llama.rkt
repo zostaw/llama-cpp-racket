@@ -2,19 +2,20 @@
 (require ffi/unsafe
          ffi/unsafe/define)
 
-
+(provide (all-defined-out))
 
 
 (define-ffi-definer define-llama
   (ffi-lib
    (string-append
-    (path->string (current-directory)) "wrapper/build/src/libllama.dylib")))
+    (path->string (current-directory)) "libllama.dylib")))
 
 
 
 
-;; Types definitions (they're mostly used for params structs declarations)
-;; It's gonna be long, the interesting part begins where types definitions end and struct declarations begin
+;; Types definitions (they're mostly used for params structs declarations).
+;; It's gonna be long,
+;; but the interesting part begins where parameters are defined and struct declarations start.
 
 (define _llama_split_mode
   (_enum '(LLAMA_SPLIT_MODE_NONE = 0
@@ -237,7 +238,7 @@
   #:c-id llama_context_default_params)
 
 ;; Printer function/s
-(define (llama-model-params-displayln params)
+#;(define (llama-model-params-displayln params)
   (displayln
    (format "n_gpu_layers: ~a \nsplit_mode: ~a \nmain_gpu: ~a \ntensor_split: ~a \nrpc_servers: ~a \nprogress_callback: ~a \nprogress_callback_user_data: ~a \nkv_overrides: ~a \nvocab_only: ~a \nuse_mmap: ~a \nuse_mlock: ~a \ncheck_tensors: ~a"
            (ptr-ref params _int32 0)
@@ -301,16 +302,15 @@
 ;; Tokenizer
 ;_llama_token
 (define-llama llama-tokenize
-  (_fun
-   _llama_model
-   _string
-   _int32
-   [vec : (_vector i _llama_token)]
-   _int32
-   _bool
-   _bool
-   -> [res : _int32]
-   -> (values vec res))
+  (_fun _llama_model
+        _string
+        _int32
+        [vec : (_vector i _llama_token)]
+        _int32
+        _bool
+        _bool
+        -> [res : _int32]
+        -> (values vec res))
   #:c-id llama_tokenize)
 
 (define (tokenizer model max-tokens add-special parse-special)
@@ -328,26 +328,72 @@
 
 
 
-;; Initialize
-(define model-params (llama-model-default-params))
-(define model (llama-load-model-from-file "./t5-v1_1-xxl-encoder-Q5_K_M.gguf" model-params))
-(define ctx-params (llama-context-default-params))
-(define ctx (llama-new-context-with-model model ctx-params))
-(define add-special (llama-add-bos-token model))
-(define tokenize
-   (tokenizer model 100 add-special #f))
+;; Token -> Piece
+;(define llama-token-max-len 30)
+(define-llama llama-token-to-piece
+  (_fun _llama_model
+        _llama_token
+        [piece : (_bytes o len)] ; this arg should be skipped in function call
+        [len : _int32] ; only provide this one
+        _int32
+        _bool
+        -> [res : _int32]
+        -> (values piece res))
+  #:c-id llama_token_to_piece)
 
-;; Display some params and other info...
-(llama-model-params-displayln model-params)
-(model-print-ptr model)
-(context-print-ptr ctx)
+(define (token-to-piecer model lstrip special)
+  #|
+  Closure that once defined can be called with token as argument.
+  For example, you first initiate token-to-piecer:
+  (define token-to-piece
+     (token-to-piecer model ; model - type: _llama_model
+                      1 ; lstrip - type int
+                      #t ; special - type: bool
+  ))
+  Then you can use the closure on given token, ie.:
+  (token-to-piece 69)
 
-;; Tokenize from input text
-(define text (read-line))
-(define-values (tokens tokens-len) (tokenize text))
-(for ([i (in-range tokens-len)])
-  (println (ptr-ref tokens _llama_token i)))
+  
+  A more complete example would be this one, using tokenize function first:
+  (define tokenize
+     (tokenizer model
+                100
+                add-special
+                #f))
+  (define token-to-piece
+    (token-to-piecer model
+                     1
+                     #t))
+  ;; Tokenize from input text
+  (define text "This is some random text to tokenize")
+  (define-values (tokens tokens-len) (tokenize text))
 
-;; Deallocate
-(llama-free-context ctx)
-(llama-free-model model)
+  (for ([i (in-range tokens-len)])
+    (let ([token (ptr-ref tokens _llama_token i)])
+      (define piece (token-to-piece token))
+      (displayln (format "token: ~a, piece: \"~a\"" token piece ))))
+|#
+  
+  (define (generate-token token [llama-token-max-len 1])
+    
+    (define-values (piece res)
+                   (llama-token-to-piece model
+                                         token
+                                         ;piece char*
+                                         llama-token-max-len ; len of piece
+                                         lstrip
+                                         special))
+    
+    (cond
+      [(not (exact-integer? res))
+         (error "token_to_piecer was supposed to return exact-integer res, but received: " res)]
+      
+      [(positive? res) piece]
+
+      [(negative? res) (generate-token token
+                        (+ llama-token-max-len
+                           (abs res)))]))
+
+  (λ (token) (generate-token token)))
+
+

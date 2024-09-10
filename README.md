@@ -12,26 +12,33 @@ but I suspect it will work with any version, I only added few wrapper functions 
 # Usage
 
 1. Clone the repo and initialize submodule.  
-2. Build libllama.dylib library.  
+2. Build libllama.dylib library:  
 
 ```
-cd wrapper
 make build
 ```
 
-The lib will be placed in *wrapper/build/src/libllama.dylib*
-
-3. Place some llama.cpp-compatible model, i.e. I use [city96/t5-v1_1-xxl-encoder-gguf](https://huggingface.co/city96/t5-v1_1-xxl-encoder-gguf).  
-Make sure that path to model is correctly defined in llama.rkt.
+alternatively:  
 
 ```
-Line 327: (define model (llama-load-model-from-file "./t5-v1_1-xxl-encoder-Q5_K_M.gguf" model-params))
+make rebuild
+```
+
+it can be executed multiple times.  
+
+The lib will be placed in main directory as *libllama.dylib*
+
+3. Download some llama.cpp compatible model, for instance I use [city96/t5-v1_1-xxl-encoder-gguf](https://huggingface.co/city96/t5-v1_1-xxl-encoder-gguf).  
+Make sure that path to model is correctly defined in your llama program, for instance in *example-tokenizer.rkt*.
+
+```
+Line 9: (define model (llama-load-model-from-file "./t5-v1_1-xxl-encoder-Q5_K_M.gguf" model-params))
 ```
 
 4. Now you can use it with *llama.rkt*, run to test:
 
 ```
-racket ./llama.rkt
+racket ./example-tokenizer.rkt
 ```
 
 
