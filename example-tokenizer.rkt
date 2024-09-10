@@ -1,12 +1,13 @@
 #lang racket
 
-(require "./llama.rkt")
+(require "llama.rkt")
 (require ffi/unsafe
          ffi/unsafe/define)
 
 ;; Initialize
+(define model-path (path->complete-path "t5-v1_1-xxl-encoder-Q5_K_M.gguf"))
 (define model-params (llama-model-default-params))
-(define model (llama-load-model-from-file "./t5-v1_1-xxl-encoder-Q5_K_M.gguf" model-params))
+(define model (llama-load-model-from-file model-path model-params))
 (define ctx-params (llama-context-default-params))
 (define ctx (llama-new-context-with-model model ctx-params))
 (define add-special (llama-add-bos-token model))
