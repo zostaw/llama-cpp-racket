@@ -1,3 +1,6 @@
 llama.rkt-autorec.llama
 *.gguf
 wrapper/build/
+build/
+compiled/
+libllama.dylib

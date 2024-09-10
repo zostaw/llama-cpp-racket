@@ -6,9 +6,10 @@
 
 
 
-
 (define-ffi-definer define-llama
   (ffi-lib "libllama"))
+
+
 
 ;; Types definitions (they're mostly used for params structs declarations).
 ;; It's gonna be long,
@@ -151,7 +152,9 @@
 (define _ggml_backend_sched_eval_callback (_fun _pointer _bool _pointer -> _bool))
 (define _ggml_abort_callback (_fun _pointer -> _bool))
 
+(define _llama_pos _int32)
 (define _llama_token _int32)
+(define _llama_seq_id _int32)
 
 (define _llama_vocab_type
   (_enum '(LLAMA_VOCAB_TYPE_NONE = 0 ; For models without vocab
@@ -375,3 +378,54 @@
   (λ (token) (generate-token token)))
 
 
+
+
+;; Batch struct
+(define-cstruct _llama_batch
+  ([n_tokens                            _int32]
+   [token                             _pointer]
+   [embd                              _pointer]
+   [pos                               _pointer]
+   [n_seq_id                          _pointer]
+   [seq_id                            _pointer]
+   [logits                            _pointer]
+   [all_pos_0                       _llama_pos]
+   [all_pos_1                       _llama_pos]
+   [all_seq_id                   _llama_seq_id]))
+
+(define-llama llama-batch-init
+  (_fun _int32 ; n_tokens
+        _int32 ; embd
+        _int32 ; n_seq_max
+        -> _llama_batch)
+  #:c-id llama_batch_init)
+
+#|
+    I think those functions below are also necessary.
+    For instance llama_batch_init takes as argument embed and n_seq_max which can be derived from below:
+    LLAMA_API uint32_t llama_n_ctx      (const struct llama_context * ctx);
+    LLAMA_API uint32_t llama_n_batch    (const struct llama_context * ctx);
+    LLAMA_API uint32_t llama_n_ubatch   (const struct llama_context * ctx);
+    LLAMA_API uint32_t llama_n_seq_max  (const struct llama_context * ctx);
+
+    LLAMA_API int32_t llama_n_vocab    (const struct llama_model * model);
+    LLAMA_API int32_t llama_n_ctx_train(const struct llama_model * model);
+    LLAMA_API int32_t llama_n_embd     (const struct llama_model * model);
+    LLAMA_API int32_t llama_n_layer    (const struct llama_model * model);
+|#
+
+(define-llama llama-batch-free
+  (_fun _llama_batch -> _void)
+  #:c-id llama_batch_free)
+
+(define-llama llama-encode
+  (_fun _llama_context _llama_batch -> _int32)
+  #:c-id llama_encode)
+
+(define-llama llama-decode
+  (_fun _llama_context _llama_batch -> _int32)
+  #:c-id llama_decode)
+
+; TODO: this function returns float pointer, but in description it appears to be matrix, so it might require some special way of handling. Just to keep in mind that this function was not tested by me, yet.
+(define-llama llama-get-logits
+  (_fun _llama_context -> _pointer))
