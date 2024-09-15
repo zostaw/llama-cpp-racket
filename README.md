@@ -1,8 +1,10 @@
-# llama.cpp over FFI into Racket
+# Quasi Racket bindings for llama.cpp
 
-This repository contains hand-made bindings for some of the functions from llama.h, allowing to use it with FFI.  
-I am not planning to maintain it in the near future. I made it for my other project and it might be incomplete for other use-cases.  
-But please feel free to do whatever you want with it!!! and let me know if you wanna add something.  
+This repository contains hand-made quasi-bindings for some of the functions from llama.h, allowing to use it with FFI.  
+It doesn't have ALL functions!  
+I made it for my other project and I'm planning to add a couple of more functions/examples 
+to complete embeddings/full inference, but I am not planning to maintain it/keep up-to-date in the near future.  
+Please, feel free to do whatever you want with it!!! and let me know if you wanna add something.  
   
 It assumes .dylib is used, so it's tested on MacOS only, but I'm pretty sure it could work with other architectures, too. 
 The only requirement would be to update *build* section in Makefile accordingly.  
@@ -13,6 +15,7 @@ but I suspect it will work with any version.
 
 
 Please note, I'm a noob and this repo might be incorrect. Use at your own risk :)  
+A lot of the code was generated with help of LLMs in-context with current state, so it should be possible to complete the code with this approach.  
 
 
 # Important
