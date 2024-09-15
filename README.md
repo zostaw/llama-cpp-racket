@@ -1,38 +1,57 @@
 # llama.cpp over FFI into Racket
 
-This repository servers purely practical purpose for my project.  
-It adds few wrapper functions to original repo and builds *dylib*.  
-Right now, it only has a wrapper for llama_params, I plan to add loading model and reading embedding results + outputs.  
-I do not plan to add any other functions, in the near future.  
-But please feel free to use/change it.  
+This repository contains hand-made bindings for some of the functions from llama.h, allowing to use it with FFI.  
+I am not planning to maintain it, in the near future, it serves purely practical purpose for my other project.  
+But please feel free to use it if you like :) and if you wanna add something, let me know.  
+  
+It assumes .dylib is used, so it's tested on MacOS only, but I'm pretty sure it could work with other architectures, too. 
+The only requirement would be to update *build* section in Makefile accordingly.  
 
-It was last tested with llama.cpp commit *a47667cff41f5a198eb791974e0afcc1cddd3229*,  
-but I suspect it will work with any version, I only added few wrapper functions inside llama.cpp and llama.h.  
+
+It was last tested with [llama.cpp release b3756](https://github.com/ggerganov/llama.cpp/releases/tag/b3756),
+but I suspect it will work with any version.  
+
+
+# What does it contain
+
+Once you build the project, you can get rid of everything apart from:  
+- *libllama.dylib* - main dependency, containing llama.cpp code  
+- *racket.rkt* - contains the bindings that allow to call functions from above library  
+
+The examples show how you can incorporate it with your project.  
+
 
 # Usage
 
-1. Clone the repo and initialize submodule.  
-2. Build libllama.dylib library:  
+1. Initialize *llama.cpp* submodule:  
+
+```
+make update
+```
+
+2. Build *libllama.dylib* library:  
 
 ```
 make build
 ```
 
-alternatively:  
+If you changed something in llama.cpp source code (or updated submodule again) and want to rebuild, use this:  
 
 ```
 make rebuild
 ```
 
-it can be executed multiple times.  
+it can be executed multiple times. It basically clears the state and builds libllama again.  
+  
+  
+The lib will be placed in main directory as *libllama.dylib*  
 
-The lib will be placed in main directory as *libllama.dylib*
-
-3. Download some llama.cpp compatible model, for instance I use [city96/t5-v1_1-xxl-encoder-gguf](https://huggingface.co/city96/t5-v1_1-xxl-encoder-gguf).  
-Make sure that path to model is correctly defined in your llama program, for instance in *example-tokenizer.rkt*.
+3. Download a llama.cpp compatible model, for instance I use [city96/t5-v1_1-xxl-encoder-gguf](https://huggingface.co/city96/t5-v1_1-xxl-encoder-gguf).  
+Make sure that path to model is correctly defined in your llama program, for instance in *example-tokenizer.rkt*.  
+In the example I use *model.gguf* for simplicity.  
 
 ```
-Line 9: (define model (llama-load-model-from-file "./t5-v1_1-xxl-encoder-Q5_K_M.gguf" model-params))
+Line 35: (define model-path (path->complete-path "model.gguf"))
 ```
 
 4. Now you can use it with *llama.rkt*, run to test:
@@ -41,8 +60,12 @@ Line 9: (define model (llama-load-model-from-file "./t5-v1_1-xxl-encoder-Q5_K_M.
 racket ./example-tokenizer.rkt
 ```
 
+![tokenizer](./example-tokenizer.gif)
+
+```
+racket ./example-batch-initialization.rkt
+```
+
+![batch initialization](./example-batch-initialization.gif)
 
 
-# Tokenizer works now:
-
-![tokenizer](./tokenizer.gif)

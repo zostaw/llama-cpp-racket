@@ -252,10 +252,6 @@
     (_fun _llama_model -> _void)
     #:c-id llama_free_model)
 
-(define-llama model-print-ptr
-  (_fun _llama_model -> _void)
-  #:c-id model_print_ptr_addr)
-
 ;; Model util functions
 ; Add bos - determines if bos tokens are used in the model
 (define-llama llama-add-bos-token
@@ -312,10 +308,6 @@
 (define-llama llama-free-context
     (_fun _llama_context -> _void)
     #:c-id llama_free)
-
-(define-llama context-print-ptr
-  (_fun _llama_context -> _void)
-  #:c-id context_print_ptr_addr)
 
 ;; Context util functions
 (define-llama llama-kv-cache-clear
