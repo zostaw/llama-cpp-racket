@@ -15,6 +15,10 @@
 ;; It's gonna be long,
 ;; but the interesting part begins where parameters are defined and struct declarations start.
 
+(define _llama_pos _int32)
+(define _llama_token _int32)
+(define _llama_seq_id _int32)
+
 (define _llama_split_mode
   (_enum '(LLAMA_SPLIT_MODE_NONE = 0
            LLAMA_SPLIT_MODE_LAYER = 1
@@ -152,10 +156,6 @@
 (define _ggml_backend_sched_eval_callback (_fun _pointer _bool _pointer -> _bool))
 (define _ggml_abort_callback (_fun _pointer -> _bool))
 
-(define _llama_pos _int32)
-(define _llama_token _int32)
-(define _llama_seq_id _int32)
-
 (define _llama_vocab_type
   (_enum '(LLAMA_VOCAB_TYPE_NONE = 0 ; For models without vocab
            LLAMA_VOCAB_TYPE_SPM  = 1 ; LLaMA tokenizer based on byte-level BPE with byte fallback
@@ -256,11 +256,49 @@
   (_fun _llama_model -> _void)
   #:c-id model_print_ptr_addr)
 
-
-;; Add bos - determines if bos tokens are used in the model
+;; Model util functions
+; Add bos - determines if bos tokens are used in the model
 (define-llama llama-add-bos-token
   (_fun _llama_model -> _bool)
   #:c-id llama_add_bos_token)
+
+(define-llama llama-model-size
+  (_fun _llama_model -> _uint64)
+  #:c-id llama_model_size)
+
+(define-llama llama-model-n-params
+  (_fun _llama_model -> _uint64)
+  #:c-id llama_model_n_params)
+
+(define-llama llama-model-has-encoder
+  (_fun _llama_model -> _bool)
+  #:c-id llama_model_has_encoder)
+
+(define-llama llama-model-has-decoder
+  (_fun _llama_model -> _bool)
+  #:c-id llama_model_has_decoder)
+
+(define-llama llama-model-decoder-start-token
+  (_fun _llama_model -> _llama_token)
+  #:c-id llama_model_decoder_start_token)
+
+(define-llama llama-n-vocab
+  (_fun _llama_model -> _int32)
+  #:c-id llama_n_vocab)
+
+(define-llama llama-n-ctx-train
+  (_fun _llama_model -> _int32)
+  #:c-id llama_n_ctx_train)
+
+(define-llama llama-n-embd
+  (_fun _llama_model -> _int32)
+  #:c-id llama_n_embd)
+
+(define-llama llama-n-layer
+  (_fun _llama_model -> _int32)
+  #:c-id llama_n_layer)
+
+
 
 
 ;; Context constructor-destructor
@@ -279,11 +317,44 @@
   (_fun _llama_context -> _void)
   #:c-id context_print_ptr_addr)
 
+;; Context util functions
+(define-llama llama-kv-cache-clear
+  (_fun _llama_context -> _void)
+  #:c-id llama_kv_cache_clear)
+
+(define-llama llama-get-model
+  (_fun _llama_context -> _llama_model)
+  #:c-id llama_get_model)
+
+; TODO: check if that function is correct - it returns float pointer, but in original description it appears to be matrix, so it might require some special way of handling.
+(define-llama llama-get-logits
+  (_fun _llama_context -> _pointer)
+  #:c-id llama_get_logits)
+
+(define-llama llama-pooling-type
+  (_fun _llama_context -> _llama_pooling_type)
+  #:c-id llama_pooling_type)
+
+(define-llama llama-n-ctx
+  (_fun _llama_context -> _uint32)
+  #:c-id llama_n_ctx)
+
+(define-llama llama-n-batch
+  (_fun _llama_context -> _uint32)
+  #:c-id llama_n_batch)
+
+(define-llama llama-n-ubatch
+  (_fun _llama_context -> _uint32)
+  #:c-id llama_n_ubatch)
+
+(define-llama llama-n-seq-max
+  (_fun _llama_context -> _int32)
+  #:c-id llama_n_seq_max)
+
 
 
 
 ;; Tokenizer
-;_llama_token
 (define-llama llama-tokenize
   (_fun _llama_model
         _string
@@ -296,8 +367,11 @@
         -> (values vec res))
   #:c-id llama_tokenize)
 
-(define (tokenizer model max-tokens add-special parse-special)
-; Defines closure that takes only text string as argument.
+; This function produces closure that takes only text string as argument.
+(define (tokenizer model
+                   max-tokens
+                   add-special
+                   parse-special)
   (define tokens-vector (make-vector max-tokens 0))
   ; The lambda function takes String and returns: num-tokens (Integer), tokens (Vector<Integer>)
   (λ (text) (llama-tokenize model
@@ -315,8 +389,8 @@
 (define-llama llama-token-to-piece
   (_fun _llama_model
         _llama_token
-        [piece : (_bytes o len)] ; this arg should be skipped in function call
-        [len : _int32] ; only provide this one
+        [piece : (_bytes o len)] ; this arg is implicit -  should be skipped in function call
+        [len : _int32] ; but don't skip this one
         _int32
         _bool
         -> [res : _int32]
@@ -329,8 +403,8 @@
   For example, you first initiate token-to-piecer (assuming you already have _llama_model object initialized):
   (define token-to-piece
      (token-to-piecer model ; model - type: _llama_model
-                      1 ; lstrip - type int
-                      #t ; special - type: bool
+                      1     ; lstrip - type int
+                      #t    ; special - type: bool
   ))
   Then you can use the closure on given token, ie.:
   (token-to-piece 69)
@@ -354,28 +428,38 @@
     (let ([token (ptr-ref tokens _llama_token i)])
       (displayln (format "token: ~a, piece: \"~a\"" token (token-to-piece token) ))))
 |#
-  
   (define (generate-token token [llama-token-max-len 1])
-    
     (define-values (piece res)
-                   (llama-token-to-piece model
-                                         token
-                                         ;piece char*
-                                         llama-token-max-len ; len of piece
-                                         lstrip
-                                         special))
-    
+      (llama-token-to-piece model
+                            token
+                            ;piece char*
+                            llama-token-max-len ; len of piece
+                            lstrip
+                            special))
     (cond
       [(not (exact-integer? res))
-         (error "token_to_piecer was supposed to return exact-integer res, but received: " res)]
-      
+       (error "token_to_piecer was supposed to return exact-integer res, but received: " res)]
       [(positive? res) piece]
-
       [(negative? res) (generate-token token
-                        (+ llama-token-max-len
-                           (abs res)))]))
-
+                                       (+ llama-token-max-len
+                                          (abs res)))]))
+  ; Return closure
   (λ (token) (generate-token token)))
+
+
+
+
+;; Embeddings
+(define _float_ptr
+  (_cpointer _float))
+
+(define-llama llama-get-embeddings-ith
+  (_fun _llama_context _int32 -> _float_ptr)
+  #:c-id llama_get_embeddings_ith)
+
+(define-llama llama-get-embeddings-seq
+  (_fun _llama_context _llama_seq_id -> _float_ptr)
+  #:c-id llama_get_embeddings_seq)
 
 
 
@@ -384,7 +468,7 @@
 (define-cstruct _llama_batch
   ([n_tokens                            _int32]
    [token                             _pointer]
-   [embd                              _pointer]
+   [embd                              _pointer] 
    [pos                               _pointer]
    [n_seq_id                          _pointer]
    [seq_id                            _pointer]
@@ -393,6 +477,23 @@
    [all_pos_1                       _llama_pos]
    [all_seq_id                   _llama_seq_id]))
 
+;; This function will become obsolete later according to llama.cpp comments.
+;; I mapped it because I couldn't make llama-batch-init work for a long time...
+(define-llama llama-batch-get-one
+  (_fun _pointer
+        _int32 ; n_tokens
+        _llama_pos ; pos_0
+        _llama_seq_id ; seq_id
+        -> _llama_batch)
+  #:c-id llama_batch_get_one)
+
+#|
+   This is *proper* way of allocating space for batch struct, but it's a bit complicated.
+   Upon initializing it's useless, you need to manually handle adding tokens into it.
+   In original code, they have a *common.cpp* helper functions that do that,
+   but it's CPP code, so doesn't come with libllama.
+   I reproduced the same function below *llama-batch-add* - it's basically the same.
+|#
 (define-llama llama-batch-init
   (_fun _int32 ; n_tokens
         _int32 ; embd
@@ -400,24 +501,32 @@
         -> _llama_batch)
   #:c-id llama_batch_init)
 
-#|
-    I think those functions below are also necessary.
-    For instance llama_batch_init takes as argument embed and n_seq_max which can be derived from below:
-    LLAMA_API uint32_t llama_n_ctx      (const struct llama_context * ctx);
-    LLAMA_API uint32_t llama_n_batch    (const struct llama_context * ctx);
-    LLAMA_API uint32_t llama_n_ubatch   (const struct llama_context * ctx);
-    LLAMA_API uint32_t llama_n_seq_max  (const struct llama_context * ctx);
-
-    LLAMA_API int32_t llama_n_vocab    (const struct llama_model * model);
-    LLAMA_API int32_t llama_n_ctx_train(const struct llama_model * model);
-    LLAMA_API int32_t llama_n_embd     (const struct llama_model * model);
-    LLAMA_API int32_t llama_n_layer    (const struct llama_model * model);
-|#
-
 (define-llama llama-batch-free
   (_fun _llama_batch -> _void)
   #:c-id llama_batch_free)
 
+;; This function comes from common.cpp, it's necessary when calling llama-batch-init'ed batch, otherwise the batch structure unusable. Alternative is to use llama-batch-get-one.
+; _llama_batch _llama_token _llama_pos vector?<llama_seq_id> _bool -> _void
+(define (llama-batch-add batch id pos seq-ids logits)
+  (define n-tokens (llama_batch-n_tokens batch))
+  
+  (ptr-set! (llama_batch-token batch)     _llama_token    n-tokens   id)
+  (ptr-set! (llama_batch-pos batch)       _llama_pos      n-tokens   pos)
+  (ptr-set! (llama_batch-n_seq_id batch)  _llama_seq_id   n-tokens   (vector-length seq-ids))
+
+  (for/list ([id (range (vector-length seq-ids))])
+    (ptr-set!
+     (ptr-ref (llama_batch-seq_id batch) _pointer n-tokens)
+     _llama_seq_id id (vector-ref seq-ids id)))
+  
+  (ptr-set! (llama_batch-logits batch) _bool n-tokens logits)
+  (ptr-set! batch _int32 (add1 n-tokens)))
+
+;; This is also from common.cpp
+(define (llama-batch-clear batch)
+  (ptr-set! batch _int32 0))
+
+;; Encode-decode (also see *llama-model-has-encoder* and *llama-model-has-decoder* functions in *model* section).
 (define-llama llama-encode
   (_fun _llama_context _llama_batch -> _int32)
   #:c-id llama_encode)
@@ -426,6 +535,4 @@
   (_fun _llama_context _llama_batch -> _int32)
   #:c-id llama_decode)
 
-; TODO: this function returns float pointer, but in description it appears to be matrix, so it might require some special way of handling. Just to keep in mind that this function was not tested by me, yet.
-(define-llama llama-get-logits
-  (_fun _llama_context -> _pointer))
+
