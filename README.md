@@ -1,8 +1,8 @@
 # llama.cpp over FFI into Racket
 
 This repository contains hand-made bindings for some of the functions from llama.h, allowing to use it with FFI.  
-I am not planning to maintain it, in the near future, it serves purely practical purpose for my other project.  
-But please feel free to use it if you like :) and if you wanna add something, let me know.  
+I am not planning to maintain it in the near future. I made it for my other project and it might be incomplete for other use-cases.  
+But please feel free to do whatever you want with it!!! and let me know if you wanna add something.  
   
 It assumes .dylib is used, so it's tested on MacOS only, but I'm pretty sure it could work with other architectures, too. 
 The only requirement would be to update *build* section in Makefile accordingly.  
@@ -12,13 +12,17 @@ It was last tested with [llama.cpp release b3756](https://github.com/ggerganov/l
 but I suspect it will work with any version.  
 
 
-# What does it contain
+Please note, I'm a noob and this repo might be incorrect. Use at your own risk :)  
+
+
+# Important
 
 Once you build the project, you can get rid of everything apart from:  
 - *libllama.dylib* - main dependency, containing llama.cpp code  
 - *racket.rkt* - contains the bindings that allow to call functions from above library  
 
-The examples show how you can incorporate it with your project.  
+You need to have installed [ffi/unsafe library](https://docs.racket-lang.org/foreign/index.html) for racket.  
+The examples at the end show how you can incorporate it within your project.  
 
 
 # Usage
@@ -41,20 +45,18 @@ If you changed something in llama.cpp source code (or updated submodule again) a
 make rebuild
 ```
 
-it can be executed multiple times. It basically clears the state and builds libllama again.  
+*rebuild* can be executed multiple times. It basically clears the state and builds libllama again.  
   
   
-The lib will be placed in main directory as *libllama.dylib*  
+In any case the lib will be placed in main directory as *libllama.dylib*  
 
-3. Download a llama.cpp compatible model, for instance I use [city96/t5-v1_1-xxl-encoder-gguf](https://huggingface.co/city96/t5-v1_1-xxl-encoder-gguf).  
-Make sure that path to model is correctly defined in your llama program, for instance in *example-tokenizer.rkt*.  
-In the example I use *model.gguf* for simplicity.  
+3. Download a llama.cpp compatible model.  
 
-```
-Line 35: (define model-path (path->complete-path "model.gguf"))
-```
+4. Once the project is built, you can use it with *llama.rkt*. See, examples below.  
 
-4. Now you can use it with *llama.rkt*, run to test:
+# Examples
+
+Both examples below load bindings from *llama.rkt* and take *model.gguf* from main dir (I use [city96/t5-v1_1-xxl-encoder-gguf](https://huggingface.co/city96/t5-v1_1-xxl-encoder-gguf)).
 
 ```
 racket ./example-tokenizer.rkt
