@@ -15,7 +15,7 @@ but I suspect it will work with any version.
 
 
 Please note, I'm a noob and this repo might be incorrect. Use at your own risk :)  
-A lot of the code was generated with help of LLMs in-context with current state, so it should be possible to complete the code with this approach.  
+Part of the code was generated with help of LLMs in-context with current state, so it should be possible to complete the code with this approach.  
 
 
 # Important
