@@ -28,7 +28,7 @@
   (llama-add-bos-token model))
 (define pooling-type
   (llama-pooling-type ctx))
-(define max-tokens 100)
+(define max-tokens 300)
 (define n-seq-max
   (llama-n-seq-max ctx))
 
@@ -48,7 +48,7 @@
                    #t))
 
 ; Tokenize from input text
-(define text "This is some random text to tokenize")
+(define text "Alpha beta gamma")
 (define-values (tokens tokens-len) (tokenize text))
 
 ; Display
@@ -77,6 +77,8 @@
 (define batch
   (llama-batch-init max-tokens 0 n-seq-max))
 
+
+
 (define (print-llama-batch batch)
   (define n-tokens (llama_batch-n_tokens batch))
   (displayln
@@ -100,14 +102,16 @@
             "|"))))
 
 ; Build from tokens
-(let ([seq-ids (make-vector 512 0)])
+(let ([seq-ids (build-vector 512 (lambda (x) x))])
   (displayln "Build up batch:")
   (for/list ([i (range tokens-len)])
     (let ([token (ptr-ref tokens _llama_token i)])
-      (llama-batch-add batch token 0 seq-ids #f)
+      (llama-batch-add batch token 0 seq-ids #t)
       (print-llama-batch batch)))
   (displayln "____________________________________________________________________________________\n"))
 
+
+(define n-tokens (llama_batch-n_tokens batch))
 
 (when (llama-model-has-encoder model)
   (displayln (format "Encode ret code: ~a\n"
@@ -118,21 +122,30 @@
 
 
 (displayln
- (format "First 50 logits: ~a"
+ (format "First ~a logits: ~a"
+         n-tokens
          (map (λ (i)
                 (ptr-ref (llama-get-logits ctx) _int8 i))
-              (range 50))))
+              (range n-tokens))
+         ))
+
+(displayln
+ (format "First ~a logits: ~a"
+         n-tokens
+         (map (λ (i)
+                (ptr-ref (ptr-ref batch _pointer 6) _int8 i))
+              (range n-tokens))))
 
 ; Clean batch (we could reuse it for the next portion to process after that)
-(llama-batch-clear batch)
+;(llama-batch-clear batch)
 
 
 
 
 ;; Deallocate
 ; Usually this would be cleaned at the end of scope for batch
-(llama-batch-free batch)
+;(llama-batch-free batch)
 ; These would be cleaned when switching ctx/model
-(llama-free-context ctx)
-(llama-free-model model)
+;(llama-free-context ctx)
+;(llama-free-model model)
 
