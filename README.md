@@ -22,7 +22,7 @@ Part of the code was generated with help of LLMs in-context with current state, 
 
 Once you build the project, you can get rid of everything apart from:  
 - *libllama.dylib* - main dependency, containing llama.cpp code  
-- *racket.rkt* - contains the bindings that allow to call functions from above library  
+- *llama.rkt* - contains the bindings that allow to call functions from above library  
 
 You need to have installed [ffi/unsafe library](https://docs.racket-lang.org/foreign/index.html) for racket.  
 The examples at the end show how you can incorporate it within your project.  
