@@ -323,6 +323,10 @@
   (_fun _llama_context -> _pointer)
   #:c-id llama_get_logits)
 
+(define-llama llama-get-logits-ith
+  (_fun _llama_context _int32 -> _pointer)
+  #:c-id llama_get_logits_ith)
+
 (define-llama llama-pooling-type
   (_fun _llama_context -> _llama_pooling_type)
   #:c-id llama_pooling_type)
